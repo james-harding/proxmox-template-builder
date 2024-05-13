@@ -21,12 +21,12 @@ fi
 
 # Store template configuration values
 declare -A templates=(
-    ["almalinux_8_9_generic"]="$almalinux_8_9_generic_enabled $almalinux_8_9_generic_config"
-    ["almalinux_9_4_generic"]="$almalinux_9_4_generic_enabled $almalinux_9_4_generic_config"
-    ["debian_11_generic"]="$debian_11_generic_enabled $debian_11_generic_config"
-    ["debian_12_generic"]="$debian_12_generic_enabled $debian_12_generic_config"
-    ["ubuntu_22_04_generic"]="$ubuntu_22_04_generic_enabled $ubuntu_22_04_generic_config"
-    ["ubuntu_24_04_generic"]="$ubuntu_24_04_generic_enabled $ubuntu_24_04_generic_config"
+    ["almalinux_8_9_generic"]="$almalinux_8_9_generic_enabled templates/almalinux-8.9-generic.vars"
+    ["almalinux_9_4_generic"]="$almalinux_9_4_generic_enabled templates/almalinux-9.4-generic.vars"
+    ["debian_11_generic"]="$debian_11_generic_enabled templates/debian-11-generic.vars"
+    ["debian_12_generic"]="$debian_12_generic_enabled templates/debian-12-generic.vars"
+    ["ubuntu_22_04_generic"]="$ubuntu_22_04_generic_enabled templates/ubuntu-22.04-generic.vars"
+    ["ubuntu_24_04_generic"]="$ubuntu_24_04_generic_enabled templates/ubuntu-24.04-generic.vars"
 )
 
 check_packages() {
