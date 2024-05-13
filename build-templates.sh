@@ -25,6 +25,8 @@ declare -A templates=(
     ["almalinux_9_4_generic"]="$almalinux_9_4_generic_enabled templates/almalinux-9.4-generic.vars"
     ["debian_11_generic"]="$debian_11_generic_enabled templates/debian-11-generic.vars"
     ["debian_12_generic"]="$debian_12_generic_enabled templates/debian-12-generic.vars"
+    ["fedora_cloud_39_generic"]="$fedora_cloud_39_generic_enabled templates/fedora_cloud_39_generic.vars"
+    ["fedora_cloud_40_generic"]="$fedora_cloud_40_generic_enabled templates/fedora_cloud_40_generic.vars"
     ["ubuntu_22_04_generic"]="$ubuntu_22_04_generic_enabled templates/ubuntu-22.04-generic.vars"
     ["ubuntu_24_04_generic"]="$ubuntu_24_04_generic_enabled templates/ubuntu-24.04-generic.vars"
 )
@@ -210,7 +212,7 @@ display_res() {
     # Print job summary stats
     echo ""
     echo ""$script_name" - Job Results:"
-    echo "-------------------------------------"
+    echo "-----------------------------------------"
     echo "Script execution time: $(printf '%dh:%dm:%ds' $((total_time/3600)) $((total_time%3600/60)) $((total_time%60)))"
     echo "Templates processed: $total_templates"
     echo -e "${GREEN}Templates created: $success_count ${NC}"
