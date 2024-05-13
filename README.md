@@ -14,7 +14,7 @@ A simple bash script to automatically build Virtual Machine (VM) templates in Pr
 
 Clone the repository
 ```
-git clone https://github.com/james-harding/pve-template-builder.git
+git clone https://github.com/james-harding/proxmox-template-builder.git
 ```
 
 Ensure required packages are installed
