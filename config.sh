@@ -19,14 +19,18 @@ ci_ipconfig=""                      # IP addressing. Uses dhcp if not configured
 
 ### Enable VM templates ###
 
-# AlmaLinux
+# AlmaLinux versions
 almalinux_8_9_generic_enabled=false
 almalinux_9_4_generic_enabled=false
 
-# Debian
+# Debian versions
 debian_11_generic_enabled=false
 debian_12_generic_enabled=false
 
-# Ubuntu
+# Fedora Cloud versions
+fedora_cloud_39_generic_enabled=false
+fedora_cloud_40_generic_enabled=false
+
+# Ubuntu versions
 ubuntu_22_04_generic_enabled=false
 ubuntu_24_04_generic_enabled=false

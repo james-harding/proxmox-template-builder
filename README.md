@@ -3,12 +3,14 @@
 Proxmox Template Builder is a script that automatically builds Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images from various Linux distributions, which have only been modified to install and enable the QEMU guest agent.  
 
 ## Available Templates
-- AlmaLinux 8.9 (Midnight Oncilla)
-- AlmaLinux 9.4 (Seafoam Ocelot)
-- Debian 11 (Bullseye)
-- Debian 12 (Bookworm)
-- Ubuntu 22.04 (Jammy Jellyfish)
-- Ubuntu 24.04 (Noble Numbat)
+- AlmaLinux 8.9 
+- AlmaLinux 9.4 
+- Debian 11 
+- Debian 12
+- Fedora Cloud 39
+- Fedora Cloud 40
+- Ubuntu 22.04 
+- Ubuntu 24.04
 
 ## Getting Started
 
