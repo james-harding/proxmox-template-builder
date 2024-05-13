@@ -1,6 +1,6 @@
 # Proxmox-Template-Builder
 
-A simple bash script to automatically build Virtual Machine (VM) templates in Proxmox Virtual Environment (PVE) with Cloud-Init support.
+Proxmox Template Builder is a script that automatically builds Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images from various Linux distributions, which have only been modified to install and enable the QEMU guest agent.  
 
 ## Available Templates
 - AlmaLinux 8.9 (Midnight Oncilla)
