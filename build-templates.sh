@@ -21,12 +21,14 @@ fi
 
 # Store template configuration values
 declare -A templates=(
-    ["almalinux_8_9_generic"]="$almalinux_8_9_generic_enabled templates/almalinux-8.9-generic.vars"
-    ["almalinux_9_4_generic"]="$almalinux_9_4_generic_enabled templates/almalinux-9.4-generic.vars"
+    ["almalinux_8_generic"]="$almalinux_8_generic_enabled templates/almalinux-8-generic.vars"
+    ["almalinux_9_generic"]="$almalinux_9_generic_enabled templates/almalinux-9-generic.vars"
     ["debian_11_generic"]="$debian_11_generic_enabled templates/debian-11-generic.vars"
     ["debian_12_generic"]="$debian_12_generic_enabled templates/debian-12-generic.vars"
-    ["fedora_cloud_39_generic"]="$fedora_cloud_39_generic_enabled templates/fedora_cloud_39_generic.vars"
-    ["fedora_cloud_40_generic"]="$fedora_cloud_40_generic_enabled templates/fedora_cloud_40_generic.vars"
+    ["fedora_cloud_39_generic"]="$fedora_cloud_39_generic_enabled templates/fedora-cloud-39-generic.vars"
+    ["fedora_cloud_40_generic"]="$fedora_cloud_40_generic_enabled templates/fedora-cloud-40-generic.vars"
+    ["rockylinux_8_generic"]="$rockylinux_8_generic_enabled templates/rockylinux-8-generic.vars"
+    ["rockylinux_9_generic"]="$rockylinux_9_generic_enabled templates/rockylinux-9-generic.vars"
     ["ubuntu_22_04_generic"]="$ubuntu_22_04_generic_enabled templates/ubuntu-22.04-generic.vars"
     ["ubuntu_24_04_generic"]="$ubuntu_24_04_generic_enabled templates/ubuntu-24.04-generic.vars"
 )
@@ -57,17 +59,18 @@ check_template_expire() {
         current_time=$(date +%s)
         template_age_secs=$((current_time - template_ctime))
         template_expire_secs=$((template_expire_days*24*60*60))
-    else
-        template_expired=0
-    fi
 
-    if [ "$template_age_secs" -lt "$template_expire_secs" ]; then
-        echo -e "$INFO_LOG_PREFIX ${GREEN}VM template $template_name is up-to-date.${NC}" 
-        template_expired=0
+        if [ "$template_age_secs" -lt "$template_expire_secs" ]; then
+            echo -e "$INFO_LOG_PREFIX ${GREEN}VM template $template_name is up-to-date.${NC}" 
+            return 0
+        else
+            echo "$WARNING_LOG_PREFIX VM template $template_name is older than $template_expire_days days and will be recreated."
+            template_expired=true
+        fi
     else
-        echo "$WARNING_LOG_PREFIX VM template $template_name is older than $template_expire_days days and will be recreated."
-        template_expired=1
-    fi
+        echo "$INFO_LOG_PREFIX VM template $template_name does not exist and will be created."
+        template_expired=true
+    fi       
     return 0
 }
 
@@ -146,10 +149,14 @@ create_vm_template () {
     local status=0
 
     echo "$INFO_LOG_PREFIX Creating VM..."
-    qm create $template_vmid --name "$template_name" \
-    --memory $template_memory --core $template_cpu_cores \
-    --net0 $template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall,tag=$template_net_vlan_tag \
-    --tags "$template_meta_tag" || status=1
+    qm create $template_vmid --name "$template_name" > /dev/null || status=1
+
+    echo "$INFO_LOG_PREFIX Configuring VM hardware..."
+    qm set $template_vmid --memory $template_memory --cores $template_cpu_cores --cpu cputype="$template_cpu_type" > /dev/null || status=1
+    qm set $template_vmid --net0 $template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall > /dev/null || status=1
+    if [ -n "$template_net_vlan_tag" ]; then
+        qm set $template_vmid --net0 "$template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall,tag=$template_net_vlan_tag" > /dev/null || status=1
+    fi
 
     echo "$INFO_LOG_PREFIX Importing customized cloud image and configuring VM storage..."
     qm set $template_vmid --scsihw virtio-scsi-single \
@@ -183,6 +190,7 @@ create_vm_template () {
     echo "$INFO_LOG_PREFIX Configuring remaining VM settings..."
     qm set $template_vmid --ostype=$template_os_type > /dev/null || status=1
     qm set $template_vmid --description "$template_description" > /dev/null || status=1
+    qm set $template_vmid --tags "$template_meta_tag" > /dev/null || status=1
 
     # delete VM if any command fails
     if [ $status -eq 1 ]; then
@@ -225,6 +233,14 @@ display_res() {
         done
     fi
     return 0
+}
+
+clean_up() {
+    if ! rm -f "$download_dir/$cloud_image_custom"; then
+        echo -e "$ERR_LOG_PREFIX Unable to remove temp file "$download_dir/$cloud_image_custom"."
+    else
+        echo "$INFO_LOG_PREFIX Removed temporary custom image. Keeping original image."
+    fi
 }
 
 ### Main script execution ###
@@ -281,26 +297,21 @@ for template in "${!templates[@]}"; do
             if [ "$template_force_recreate" = true ]; then
                 echo -e "$WARN_LOG_PREFIX Forcing recreation of $template_name."
                 if download_cloud_image && customize_cloud_image && destroy_existing_vm && create_vm_template; then
-                    ((success_count++))
+                    ((success_count++)) ; clean_up
                 else
-                    ((failed_count++))
+                    ((failed_count++)) ; clean_up
                     failed_templates["$template_name"]="Failed"
                 fi
             else # Only recreate enabled templates if expiration time has been reached
-                check_template_expire    
-                if [ $template_expired = 1 ]; then
+                check_template_expire   
+                if [ "$template_expired" = true ]; then
                     if download_cloud_image && customize_cloud_image && destroy_existing_vm && create_vm_template; then
-                        ((success_count++))
+                        ((success_count++)) ; clean_up
                     else
-                        ((failed_count++))
+                        ((failed_count++)) ; clean_up
                         failed_templates["$template_name"]="Failed"
                     fi
                 fi
-            fi
-
-            # remove customised cloud image file
-            if ! rm -f "$download_dir/$cloud_image_custom"; then
-                echo -e "$ERR_LOG_PREFIX Unable to remove temp file "$download_dir/$cloud_image_custom"."
             fi
         else
             echo -e "$script_name ${RED}ERROR:${NC} Unable to source $vars_file."

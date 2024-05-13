@@ -31,6 +31,10 @@ debian_12_generic_enabled=false
 fedora_cloud_39_generic_enabled=false
 fedora_cloud_40_generic_enabled=false
 
+# RockyLinux versions
+rockylinux_8_generic_enabled=false
+rockylinux_9_generic_enabled=false
+
 # Ubuntu versions
 ubuntu_22_04_generic_enabled=false
 ubuntu_24_04_generic_enabled=false

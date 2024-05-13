@@ -9,6 +9,8 @@ Proxmox Template Builder is a script that automatically builds Virtual Machine (
 - Debian 12
 - Fedora Cloud 39
 - Fedora Cloud 40
+- RockyLinux 8
+- RockyLinux 9
 - Ubuntu 22.04 
 - Ubuntu 24.04
 
