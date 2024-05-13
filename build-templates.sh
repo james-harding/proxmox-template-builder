@@ -61,7 +61,8 @@ check_template_expire() {
         template_expire_secs=$((template_expire_days*24*60*60))
 
         if [ "$template_age_secs" -lt "$template_expire_secs" ]; then
-            echo -e "$INFO_LOG_PREFIX ${GREEN}VM template $template_name is up-to-date.${NC}" 
+            echo -e "$INFO_LOG_PREFIX ${GREEN}VM template $template_name is up-to-date.${NC}"
+            template_expired=false
             return 0
         else
             echo "$WARNING_LOG_PREFIX VM template $template_name is older than $template_expire_days days and will be recreated."
