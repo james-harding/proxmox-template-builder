@@ -129,9 +129,9 @@ destroy_existing_vm() {
     vm_list=$(qm list | awk 'NR>1 {print $1}') 
 
     if echo "$vm_list" | grep -qw $template_vmid; then
-        vm_tag=$(qm config $template_vmid | grep "^tags:" | awk '{print $2}')
-        if [ "$vm_tag" != "$template_meta_tag" ]; then
-            echo -e "$ERR_LOG_PREFIX Unable to destroy VM. Unexpected or missing VM tag."
+        vms_in_pool=$(pvesh get /pools/Templates --noborder)
+        if ! echo "$vms_in_pool" | grep -qw "qemu/$template_vmid"; then
+            echo -e "$ERR_LOG_PREFIX Unable to destroy VM - Not in Resource Pool 'Templates'. Please destroy manually."
             return 1
         else
             echo "$INFO_LOG_PREFIX Destroying previous VM template..."
@@ -146,64 +146,104 @@ destroy_existing_vm() {
     fi
 }
 
+create_pool() {
+    local pool_name="Templates"
+
+    # Check if the pool already exists
+    existing_pools=$(pvesh get /pools --noborder)
+    if echo "$existing_pools" | grep -qw "$pool_name"; then
+        echo "$INFO_LOG_PREFIX Resource pool '$pool_name' already exists."
+    else
+        echo "$INFO_LOG_PREFIX Creating resource pool '$pool_name'..."
+        if ! pvesh create /pools --pool "$pool_name" > /dev/null 2>&1; then
+            echo -e "$ERR_LOG_PREFIX Failed to create resource pool '$pool_name'." >&2
+            return 1
+        fi
+    fi
+    return 0
+}
+
 create_vm_template () {
     local status=0
 
+    create_pool
+    if [ $? -ne 0 ]; then
+        echo -e "$ERR_LOG_PREFIX Failed to create resource pool for templates." >&2
+        return 1
+    fi
+
+    status=0
+    create_vm=false
     echo "$INFO_LOG_PREFIX Creating VM..."
-    qm create $template_vmid --name "$template_name" > /dev/null || status=1
-
-    echo "$INFO_LOG_PREFIX Configuring VM hardware..."
-    qm set $template_vmid --memory $template_memory --cores $template_cpu_cores --cpu cputype="$template_cpu_type" > /dev/null || status=1
-    qm set $template_vmid --net0 $template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall > /dev/null || status=1
-    if [ -n "$template_net_vlan_tag" ]; then
-        qm set $template_vmid --net0 "$template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall,tag=$template_net_vlan_tag" > /dev/null || status=1
-    fi
-
-    echo "$INFO_LOG_PREFIX Importing customized cloud image and configuring VM storage..."
-    qm set $template_vmid --scsihw virtio-scsi-single \
-    --scsi0 "$template_pve_storage":0,import-from="$download_dir/$cloud_image_custom",iothread=1,discard="on",ssd=1 > /dev/null || status=1
-    qm disk move $template_vmid scsi0 "$template_pve_storage" --format qcow2 --delete > /dev/null || status=1
-
-    # resize VM disk (added check to only grow disk since shrinking is unsupported)
-    cloud_image_virt_size_bytes=$(qemu-img info "$download_dir/$cloud_image_custom" | awk '/virtual size/ {print $5}' | sed 's/(//g')
-    template_disk_size_bytes=$(($template_disk_size*1024**3))
-
-    if [ $template_disk_size_bytes -gt $cloud_image_virt_size_bytes ]; then
-        echo "$INFO_LOG_PREFIX Resizing boot disk..."
-        qm resize $template_vmid scsi0 "$template_disk_size"G > /dev/null || status=1
-    else
-        echo -e "$WARN_LOG_PREFIX Shrinking disk is unsupported. Using cloud image virtual disk size."
-    fi
-
-    echo "$INFO_LOG_PREFIX Configuring cloud-init..."
-    qm set $template_vmid --ide2 "$template_pve_storage":cloudinit > /dev/null || status=1
-    qm set $template_vmid --ciuser "$ci_user" > /dev/null || status=1
-    qm set $template_vmid --cipassword "$ci_password" > /dev/null || status=1
-    qm set $template_vmid --sshkeys "$ci_sshkeys" > /dev/null || status=1
-    #qm set $template_vmid --nameserver "$ci_nameserver" > /dev/null || status=1
-    #qm set $template_vmid --searchdomain "$ci_searchdomain" > /dev/null || status=1
-    qm set $template_vmid --ipconfig0 ip=dhcp > /dev/null || status=1
-    qm set $template_vmid --boot c --bootdisk scsi0 > /dev/null || status=1
-
-    echo "$INFO_LOG_PREFIX Enabling qemu guest agent..."
-    qm set $template_vmid --agent enabled=1 > /dev/null || status=1
     
-    echo "$INFO_LOG_PREFIX Configuring remaining VM settings..."
-    qm set $template_vmid --ostype=$template_os_type > /dev/null || status=1
-    qm set $template_vmid --description "$template_description" > /dev/null || status=1
-    qm set $template_vmid --tags "$template_meta_tag" > /dev/null || status=1
+    while [ $status -eq 0 ]; do
+        qm create $template_vmid --name "$template_name" > /dev/null || status=1
 
-    # delete VM if any command fails
+        if [ $status -eq 0 ]; then
+            echo "$INFO_LOG_PREFIX Configuring VM hardware..."
+            qm set $template_vmid --memory $template_memory --cores $template_cpu_cores --cpu cputype="$template_cpu_type" > /dev/null || status=1
+            qm set $template_vmid --net0 $template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall > /dev/null || status=1
+            if [ -n "$template_net_vlan_tag" ]; then
+                qm set $template_vmid --net0 "$template_net_device,bridge=$template_net_bridge,firewall=$template_net_firewall,tag=$template_net_vlan_tag" > /dev/null || status=1
+            fi
+
+            echo "$INFO_LOG_PREFIX Importing customized cloud image and configuring VM storage..."
+            qm set $template_vmid --scsihw virtio-scsi-single \
+            --scsi0 "$template_pve_storage":0,import-from="$download_dir/$cloud_image_custom",iothread=1,discard="on",ssd=1 > /dev/null || status=1
+            qm disk move $template_vmid scsi0 "$template_pve_storage" --format qcow2 --delete > /dev/null || status=1
+
+            # resize VM disk (added check to only grow disk since shrinking is unsupported)
+            cloud_image_virt_size_bytes=$(qemu-img info "$download_dir/$cloud_image_custom" | awk '/virtual size/ {print $5}' | sed 's/(//g')
+            template_disk_size_bytes=$(($template_disk_size*1024**3))
+
+            if [ $template_disk_size_bytes -gt $cloud_image_virt_size_bytes ]; then
+                echo "$INFO_LOG_PREFIX Resizing boot disk..."
+                qm resize $template_vmid scsi0 "$template_disk_size"G > /dev/null || status=1
+            else
+                echo -e "$WARN_LOG_PREFIX Shrinking disk is unsupported. Using cloud image virtual disk size."
+            fi
+
+            echo "$INFO_LOG_PREFIX Configuring cloud-init..."
+            qm set $template_vmid --ide2 "$template_pve_storage":cloudinit > /dev/null || status=1
+            qm set $template_vmid --ciuser "$ci_user" > /dev/null || status=1
+            qm set $template_vmid --cipassword "$ci_password" > /dev/null || status=1
+            qm set $template_vmid --sshkeys "$ci_sshkeys" > /dev/null || status=1
+            #qm set $template_vmid --nameserver "$ci_nameserver" > /dev/null || status=1
+            #qm set $template_vmid --searchdomain "$ci_searchdomain" > /dev/null || status=1
+            qm set $template_vmid --ipconfig0 ip=dhcp > /dev/null || status=1
+            qm set $template_vmid --boot c --bootdisk scsi0 > /dev/null || status=1
+
+            echo "$INFO_LOG_PREFIX Enabling qemu guest agent..."
+            qm set $template_vmid --agent enabled=1 > /dev/null || status=1
+    
+            echo "$INFO_LOG_PREFIX Configuring remaining VM settings..."
+            qm set $template_vmid --ostype=$template_os_type > /dev/null || status=1
+            qm set $template_vmid --description "$template_description" > /dev/null || status=1
+
+            create_vm=true
+        fi
+
+        if [ "$create_vm" = true ]; then
+            break
+        fi
+    done
+
     if [ $status -eq 1 ]; then
         echo -e "$ERR_LOG_PREFIX Failed to create VM template."
         qm destroy $template_vmid > /dev/null
         echo "$INFO_LOG_PREFIX VM destroyed."
         return 1
-    else # convert VM to template
-        echo "$INFO_LOG_PREFIX Converting VM to template..."
-        qm template $template_vmid > /dev/null
-        echo -e "$INFO_LOG_PREFIX ${GREEN}VM template ""$template_name"" successfully created.${NC}"
     fi
+
+    # Convert VM to template
+    echo "$INFO_LOG_PREFIX Converting VM to template..."
+    qm template $template_vmid > /dev/null
+
+    # Add template to resource pool
+    echo "$INFO_LOG_PREFIX Adding VM to resource pool 'Templates'..."
+    pvesh set "/pools/Templates" -vms $template_vmid > /dev/null
+
+    echo -e "$INFO_LOG_PREFIX ${GREEN}VM template ""$template_name"" successfully created.${NC}"
 }
 
 display_res() {
