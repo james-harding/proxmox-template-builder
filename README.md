@@ -1,6 +1,8 @@
 # Proxmox-Template-Builder
 
-Proxmox Template Builder is a script that automatically builds Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images from various Linux distributions, which have only been modified to install and enable the QEMU guest agent.  
+Proxmox Template Builder is a bash script that automatically creates and maintains Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images of various Linux distributions like AlmaLinux, Debian, and Ubuntu, which have been minimally modified to install and enable the QEMU guest agent.
+
+The script manages the lifecycle of templates by destroying and recreating templates that are older than a specified number of days (default: 5 days). This expiration period can be configured in the config.sh file. The script is designed to run as a scheduled task to maintain up-to-date templates consistently.
 
 ## Available Templates
 - AlmaLinux 8
@@ -14,60 +16,49 @@ Proxmox Template Builder is a script that automatically builds Virtual Machine (
 - Ubuntu 22.04 
 - Ubuntu 24.04
 
+## Requirements
+
+- Proxmox Virtual Environment (PVE) installed and configured
+- `wget`, `curl`, and `libguestfs-tools` packages installed
+
 ## Getting Started
 
-Clone the repository
+Clone the repository to your Proxmox host.
 ```
 git clone https://github.com/james-harding/proxmox-template-builder.git
 ```
 
-Ensure required packages are installed
-```
-sudo apt install wget curl libguestfs-tools
-```
+### General Configuration
 
-wget and curl should already be installed but `libguestfs-tools` will likely need to be installed.
-
----
-
-### Selecting Templates
-
-Edit `config.sh` to enable or disable specific VM templates.
+The `config.sh` file contains configuration variables that control the behavior of the script, such as enabling/disabling specific templates and setting Cloud-Init options.
 
 For example, to enable the Ubuntu 24.04 template, 
 ```
 ubuntu_24_04_generic_enabled=true
 ```
 
-For additional customisation, each template has a separate configuration file in the `templates` directory.
-
----
+For additional customization, each template has a separate configuration file in the `templates` directory, allowing you to modify template-specific settings.
 
 ### Cloud-Init Configuration
 
-Edit `config.sh` and provide values for the following variables
+Edit `config.sh` and provide values for the following variables:
 ```
-ci_user="demo"                      # User name                                       
-ci_password="demo"                  # Password to assign the user. Generally not recommended. Use SSH keys instead.           
-ci_sshkeys="authorized_keys"        # Inject public SSH keys (one key per line, OpenSSH format.) 
+ci_user="demo"               # User name
+ci_password="demo"           # Password to assign the user. Generally not recommended. Use SSH keys instead.
+ci_sshkeys="authorized_keys" # Inject public SSH keys (one key per line, OpenSSH format). Injecting public SSH keys allows you to securely access the templates without using passwords.
 ```
-
----
 
 ### Running the Script
 
-After updating the variables, simply run the script.
-
+After updating the variables as needed, simply run the script.
 ```
 ./build-templates.sh
 ```
-Depending on how many templates are enabled, you should see a number of templates appear in the Proxmox interface.
+The script will create all templates that are enabled and recreate any old templates if present. 
 
----
+### Optional: Add to Scheduler
 
-### Optional: Add to scheduler
-
-To maintain always up-to-date templates, run this script from a scheduler. For example, a basic cron job to run every Sunday at 1:30 AM. 
+To maintain always up-to-date templates, you may decide to run this script from a scheduler. For example, a basic cron job to run every Sunday at 1:30 AM. 
 
 ```
 # Create/Update Proxmox VM Templates
