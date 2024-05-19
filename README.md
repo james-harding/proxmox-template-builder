@@ -48,13 +48,6 @@ ci_password="demo123!"   # Password to assign the user. Generally not recommende
 ci_sshkeys=""            # Path to a file containing SSH public key(s). One key per line, OpenSSH format.
 ```
 
-Other cloud-init configuration options can also be customised such as,
-```
-ci_nameserver=""                    # IP addresses of DNS servers to use (space separated). Uses host settings if not configured.
-ci_searchdomain=""                  # DNS search domain. Uses host settings if not configured.
-ci_ipconfig=""                      # IP addressing. Uses dhcp if not configured. 
-```
-
 ### Running the Script
 
 After updating the variables as needed, simply run the script.

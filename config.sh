@@ -16,7 +16,6 @@ ci_password="demo123!"              # Password to assign the user. Generally not
 ci_sshkeys=""                       # Path to file containing SSH public keys (one key per line, OpenSSH format).
 ci_nameserver=""                    # IP addresses of DNS servers to use (space separated). Uses host settings if not configured.
 ci_searchdomain=""                  # DNS search domain. Uses host settings if not configured.
-ci_ipconfig=""                      # IP addressing. Uses dhcp if not configured. 
 
 ### Enable VM templates ###
 

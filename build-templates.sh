@@ -221,11 +221,7 @@ create_vm_template () {
                 if [ -n "$ci_searchdomain" ]; then 
                     qm set $template_vmid --searchdomain "$ci_searchdomain" > /dev/null || status=1
                 fi
-                if [ -n "$ci_ipconfig" ]; then
-                    qm set $template_vmid --ipconfig0 ip="$ipconfig" > /dev/null || status=1
-                else
-                    qm set $template_vmid --ipconfig0 ip="dhcp" > /dev/null || status=1
-                fi
+                qm set $template_vmid --ipconfig0 ip="dhcp" > /dev/null || status=1
             else
                 echo -e "$WARN_LOG_PREFIX Cloud-Init is not enabled. Skipping configuration..."
             fi
