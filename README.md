@@ -41,11 +41,18 @@ For additional customization, each template has a separate configuration file in
 
 ### Cloud-Init Configuration
 
-Edit `config.sh` and provide values for the following variables:
+If using cloud-init, edit `config.sh` to provide authentication details to be able to login to your VM(s). 
+```          
+ci_user="demo"           # User name
+ci_password="demo123!"   # Password to assign the user. Generally not recommended to define here. Use SSH keys instead.
+ci_sshkeys=""            # Path to a file containing SSH public key(s). One key per line, OpenSSH format.
 ```
-ci_user="demo"               # User name
-ci_password="demo"           # Password to assign the user. Generally not recommended. Use SSH keys instead.
-ci_sshkeys="authorized_keys" # Inject public SSH keys (one key per line, OpenSSH format). Injecting public SSH keys allows you to securely access the templates without using passwords.
+
+Other cloud-init configuration options can also be customised such as,
+```
+ci_nameserver=""                    # IP addresses of DNS servers to use (space separated). Uses host settings if not configured.
+ci_searchdomain=""                  # DNS search domain. Uses host settings if not configured.
+ci_ipconfig=""                      # IP addressing. Uses dhcp if not configured. 
 ```
 
 ### Running the Script

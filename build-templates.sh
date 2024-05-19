@@ -203,20 +203,38 @@ create_vm_template () {
                 echo -e "$WARN_LOG_PREFIX Shrinking disk is unsupported. Using cloud image virtual disk size."
             fi
 
-            echo "$INFO_LOG_PREFIX Configuring cloud-init..."
-            qm set $template_vmid --ide2 "$template_pve_storage":cloudinit > /dev/null || status=1
-            qm set $template_vmid --ciuser "$ci_user" > /dev/null || status=1
-            qm set $template_vmid --cipassword "$ci_password" > /dev/null || status=1
-            qm set $template_vmid --sshkeys "$ci_sshkeys" > /dev/null || status=1
-            #qm set $template_vmid --nameserver "$ci_nameserver" > /dev/null || status=1
-            #qm set $template_vmid --searchdomain "$ci_searchdomain" > /dev/null || status=1
-            qm set $template_vmid --ipconfig0 ip=dhcp > /dev/null || status=1
-            qm set $template_vmid --boot c --bootdisk scsi0 > /dev/null || status=1
+            if [ "$ci_enabled" = true ]; then
+                echo "$INFO_LOG_PREFIX Configuring cloud-init..."
+                qm set $template_vmid --ide2 "$template_pve_storage":cloudinit > /dev/null || status=1
+                if [ -n "$ci_user" ]; then 
+                    qm set $template_vmid --ciuser "$ci_user" > /dev/null || status=1
+                fi
+                if [ -n "$ci_password" ]; then
+                    qm set $template_vmid --cipassword "$ci_password" > /dev/null || status=1
+                fi
+                if [ -n "$ci_sshkeys" ]; then
+                    qm set $template_vmid --sshkeys "$ci_sshkeys" > /dev/null || status=1
+                fi
+                if [ -n "$ci_nameserver" ]; then
+                    qm set $template_vmid --nameserver "$ci_nameserver" > /dev/null || status=1
+                fi
+                if [ -n "$ci_searchdomain" ]; then 
+                    qm set $template_vmid --searchdomain "$ci_searchdomain" > /dev/null || status=1
+                fi
+                if [ -n "$ci_ipconfig" ]; then
+                    qm set $template_vmid --ipconfig0 ip="$ipconfig" > /dev/null || status=1
+                else
+                    qm set $template_vmid --ipconfig0 ip="dhcp" > /dev/null || status=1
+                fi
+            else
+                echo -e "$WARN_LOG_PREFIX Cloud-Init is not enabled. Skipping configuration..."
+            fi
 
             echo "$INFO_LOG_PREFIX Enabling qemu guest agent..."
             qm set $template_vmid --agent enabled=1 > /dev/null || status=1
-    
+        
             echo "$INFO_LOG_PREFIX Configuring remaining VM settings..."
+            qm set $template_vmid --boot c --bootdisk scsi0 > /dev/null || status=1
             qm set $template_vmid --ostype=$template_os_type > /dev/null || status=1
             qm set $template_vmid --description "$template_description" > /dev/null || status=1
 
