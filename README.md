@@ -2,7 +2,7 @@
 
 Proxmox Template Builder is a bash script that automatically creates and maintains Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images of various Linux distributions like AlmaLinux, Debian, and Ubuntu, which have been minimally modified to install and enable the QEMU guest agent.
 
-The script manages the lifecycle of templates by destroying and recreating templates that are older than a specified number of days (default: 5 days). This expiration period can be configured in the config.sh file. The script is designed to run as a scheduled task to maintain up-to-date templates consistently.
+The script manages the lifecycle of templates by destroying and recreating templates that are older than a specified number of days (default: 10 days). This expiration period can be configured in the config.sh file. The script is designed to run as a scheduled task to maintain up-to-date templates consistently.
 
 ## Available Templates
 - AlmaLinux 8
