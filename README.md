@@ -41,7 +41,7 @@ For additional customization, each template has a separate configuration file in
 
 ### Cloud-Init Configuration
 
-If using cloud-init, edit `config.sh` to provide authentication details to be able to login to your VM(s). 
+Cloud-Init is enabled by default but can be disabled. If using cloud-init, edit `config.sh` to provide authentication details to be able to login to your VM(s). 
 ```          
 ci_user="demo"           # User name
 ci_password="demo123!"   # Password to assign the user. Generally not recommended to define here. Use SSH keys instead.
