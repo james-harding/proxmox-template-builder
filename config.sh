@@ -22,7 +22,7 @@ ci_searchdomain=""                  # DNS search domain. Uses host settings if n
 # AlmaLinux versions
 almalinux_8_9_generic_enabled=false
 almalinux_9_4_generic_enabled=false
-almalinux_10_0_generic_enabled=false
+almalinux_10_generic_enabled=false
 
 # Debian versions
 debian_11_generic_enabled=false
