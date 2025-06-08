@@ -23,6 +23,7 @@ fi
 declare -A templates=(
     ["almalinux_8_generic"]="$almalinux_8_generic_enabled templates/almalinux-8-generic.vars"
     ["almalinux_9_generic"]="$almalinux_9_generic_enabled templates/almalinux-9-generic.vars"
+    ["almalinux_10_generic"]="$almalinux_10_generic_enabled templates/almalinux-10-generic.vars"
     ["debian_11_generic"]="$debian_11_generic_enabled templates/debian-11-generic.vars"
     ["debian_12_generic"]="$debian_12_generic_enabled templates/debian-12-generic.vars"
     ["fedora_cloud_39_generic"]="$fedora_cloud_39_generic_enabled templates/fedora-cloud-39-generic.vars"
