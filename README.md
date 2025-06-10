@@ -1,20 +1,20 @@
 # Proxmox-Template-Builder
 
-Proxmox Template Builder is a bash script that automatically creates and maintains Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled. The templates are built from official cloud images of various Linux distributions like AlmaLinux, Debian, and Ubuntu, which have been minimally modified to install and enable the QEMU guest agent.
+Proxmox Template Builder is a bash script that automates the creation and maintenance of Virtual Machine (VM) templates in a Proxmox Virtual Environment (PVE) with Cloud-Init enabled.
 
-The script manages the lifecycle of templates by destroying and recreating templates that are older than a specified number of days (default: 10 days). This expiration period can be configured in the config.sh file. The script is designed to run as a scheduled task to maintain up-to-date templates consistently.
+The script manages the lifecycle of templates by destroying and recreating templates that are older than a specified number of days (default: 10 days). The script is intended to be run as a scheduled task to maintain up-to-date templates consistently, but can also be run ad-hoc. 
+
+Once you have your template(s), you can use other automation tools such as Terraform and/or Ansible to provision and configure your VMs. Or just manually clone and configure them in Proxmox. 
 
 ## Available Templates
-- AlmaLinux 8
-- AlmaLinux 9 
-- Debian 11 
-- Debian 12
-- Fedora Cloud 39
-- Fedora Cloud 40
-- RockyLinux 8
-- RockyLinux 9
-- Ubuntu 22.04 
-- Ubuntu 24.04
+
+This tool will be actively maintained to provide up-to-date, ready-to-use templates for the latest two releases (current and previous) of popular Linux server distributions.
+
+- [AlmaLinux](https://almalinux.org)
+- [Debian](https://www.debian.org)
+- [Fedora Cloud](https://fedoraproject.org/cloud/)
+- [Rocky Linux](https://rockylinux.org)
+- [Ubuntu Server](https://ubuntu.com/server)
 
 ## Requirements
 
@@ -54,7 +54,7 @@ After updating the variables as needed, simply run the script.
 ```
 ./build-templates.sh
 ```
-The script will create all templates that are enabled and recreate any old templates if present. 
+The script will create or update all templates that are enabled.
 
 ### Optional: Add to Scheduler
 

@@ -29,8 +29,8 @@ debian_11_generic_enabled=false
 debian_12_generic_enabled=false
 
 # Fedora Cloud versions
-fedora_cloud_39_generic_enabled=false
-fedora_cloud_40_generic_enabled=false
+fedora_cloud_41_generic_enabled=false
+fedora_cloud_42_generic_enabled=false
 
 # RockyLinux versions
 rockylinux_8_generic_enabled=false

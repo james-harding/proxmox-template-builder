@@ -26,8 +26,8 @@ declare -A templates=(
     ["almalinux_10_generic"]="$almalinux_10_generic_enabled templates/almalinux-10-generic.vars"
     ["debian_11_generic"]="$debian_11_generic_enabled templates/debian-11-generic.vars"
     ["debian_12_generic"]="$debian_12_generic_enabled templates/debian-12-generic.vars"
-    ["fedora_cloud_39_generic"]="$fedora_cloud_39_generic_enabled templates/fedora-cloud-39-generic.vars"
-    ["fedora_cloud_40_generic"]="$fedora_cloud_40_generic_enabled templates/fedora-cloud-40-generic.vars"
+    ["fedora_cloud_41_generic"]="$fedora_cloud_41_generic_enabled templates/fedora-cloud-41-generic.vars"
+    ["fedora_cloud_42_generic"]="$fedora_cloud_42_generic_enabled templates/fedora-cloud-42-generic.vars"
     ["rockylinux_8_generic"]="$rockylinux_8_generic_enabled templates/rockylinux-8-generic.vars"
     ["rockylinux_9_generic"]="$rockylinux_9_generic_enabled templates/rockylinux-9-generic.vars"
     ["ubuntu_22_04_generic"]="$ubuntu_22_04_generic_enabled templates/ubuntu-22.04-generic.vars"
@@ -115,12 +115,22 @@ download_cloud_image() {
 customize_cloud_image() {
     cp $download_dir/$cloud_image $download_dir/$cloud_image_custom
 
-    echo "$INFO_LOG_PREFIX Customising cloud image..."
-    virt-customize -a $download_dir/"$cloud_image_custom" \
-        --install qemu-guest-agent \
-        --run-command 'systemctl enable qemu-guest-agent.service'
+    # Detect OS family and set update command
+    os_update_cmd=""
+    if virt-customize -a $download_dir/"$cloud_image_custom" --run-command 'test -f /etc/debian_version' &>/dev/null; then
+        os_update_cmd="apt-get update"
+    elif virt-customize -a $download_dir/"$cloud_image_custom" --run-command 'test -f /etc/redhat-release' &>/dev/null; then
+        os_update_cmd="dnf makecache"
+    fi
 
-    # To do: Add error handler for virt-customize
+    if ! virt-customize -a $download_dir/"$cloud_image_custom" \
+        # Refreshing package cache to avoid occassional errors when trying to install qemu-guest-agent
+        ${os_update_cmd:+--run-command "$os_update_cmd"} \
+        --install qemu-guest-agent \
+        --run-command 'systemctl enable qemu-guest-agent.service'; then
+        echo -e "$ERR_LOG_PREFIX Failed to customize cloud image." >&2
+        return 1
+    fi
 
     echo "$INFO_LOG_PREFIX Successfully customised $cloud_image."
     return 0
@@ -192,6 +202,9 @@ create_vm_template () {
             qm set $template_vmid --scsihw virtio-scsi-single \
             --scsi0 "$template_pve_storage":0,import-from="$download_dir/$cloud_image_custom",iothread=1,discard="on",ssd=1 > /dev/null || status=1
             qm disk move $template_vmid scsi0 "$template_pve_storage" --format qcow2 --delete > /dev/null || status=1
+
+            # add serial port to avoid serial-getty service failure on some images
+            qm set $template_vmid --serial0 socket > /dev/null || status=1
 
             # resize VM disk (added check to only grow disk since shrinking is unsupported)
             cloud_image_virt_size_bytes=$(qemu-img info "$download_dir/$cloud_image_custom" | awk '/virtual size/ {print $5}' | sed 's/(//g')
@@ -352,21 +365,37 @@ for template in "${!templates[@]}"; do
             # Recreate all enabled templates regardless of expiration time
             if [ "$template_force_recreate" = true ]; then
                 echo -e "$WARN_LOG_PREFIX Forcing recreation of $template_name."
-                if download_cloud_image && customize_cloud_image && destroy_existing_vm && create_vm_template; then
-                    ((success_count++)) ; clean_up
+                image_ready=false
+                if download_cloud_image; then
+                    image_ready=true
+                    if customize_cloud_image && destroy_existing_vm && create_vm_template; then
+                        ((success_count++))
+                    else
+                        ((failed_count++))
+                        failed_templates["$template_name"]="Failed"
+                    fi
                 else
-                    ((failed_count++)) ; clean_up
+                    ((failed_count++))
                     failed_templates["$template_name"]="Failed"
                 fi
+                $image_ready && clean_up
             else # Only recreate enabled templates if expiration time has been reached
                 check_template_expire   
                 if [ "$template_expired" = true ]; then
-                    if download_cloud_image && customize_cloud_image && destroy_existing_vm && create_vm_template; then
-                        ((success_count++)) ; clean_up
+                    image_ready=false
+                    if download_cloud_image; then
+                        image_ready=true
+                        if customize_cloud_image && destroy_existing_vm && create_vm_template; then
+                            ((success_count++))
+                        else
+                            ((failed_count++))
+                            failed_templates["$template_name"]="Failed"
+                        fi
                     else
-                        ((failed_count++)) ; clean_up
+                        ((failed_count++))
                         failed_templates["$template_name"]="Failed"
                     fi
+                    $image_ready && clean_up
                 fi
             fi
         else
