@@ -124,7 +124,6 @@ customize_cloud_image() {
     fi
 
     if ! virt-customize -a $download_dir/"$cloud_image_custom" \
-        # Refreshing package cache to avoid occassional errors when trying to install qemu-guest-agent
         ${os_update_cmd:+--run-command "$os_update_cmd"} \
         --install qemu-guest-agent \
         --run-command 'systemctl enable qemu-guest-agent.service'; then
